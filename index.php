@@ -66,45 +66,15 @@ $files = dir_to_array(PYGMY_PATH);
     <meta charset="UTF-8">
     <title>Portal</title>
 	<script src="/assets/js/vendor/tinymce/tinymce.min.js"></script>
-
-	<!--style>
-		.cms-article {
-			padding: 5px 0;
-		}
-		/* .cms-article a.button {
-			display: none;
-			float: right;
-		} */
-		.cms-article:hover {
-			background: #eee;
-		}
-		/* .cms-article:hover a.button {
-			display: initial;
-		} */
-		*, *:before, *:after {
-		  box-sizing: border-box;
-		}
-
-		a.button {
-			-webkit-appearance: button;
-			text-decoration: none;
-			color: initial;
-			padding: 2px 7px 3px;
-			font-size: 11px;
-			font-family: system-ui;
-		}
-	</style-->
 </head>
-
 <body>
 	<div style="float: left; width: 25%;">
 		<div class=""><a class="button" href="<?=$_SERVER['SCRIPT_NAME']?>">New</a></div>
 		<?php foreach( $files as $f ) {
 			$line = fgets(fopen(PYGMY_PATH . "/$f", 'r'));
-			if( strpos($line, '<!--') === false )
-				$line = '';
-			else
-				$line = trim( str_replace( ['<!--', '-->'], '', $line ) );
+			$line = ( strpos($line, '<!--') === false
+				? $line = '';
+				: $line = trim( str_replace( ['<!--', '-->'], '', $line ) ) );
 
 			echo '<div class="cms-article">' . ( strpos($f, '.draft') !== false ? 'Draft - ' : '' )
 				. "<a href=\"index.php?file=$f\">$line</a>"
@@ -112,7 +82,6 @@ $files = dir_to_array(PYGMY_PATH);
 		} ?>
 	</div>
 	<div style="float: left; width: 75%;">
-		<!-- <form method="post" action="save-article.php"> -->
 		<form method="post" action="">
 			<div>
 				<div><input style="width: 100%" type="text" name="title" placeholder="Title" value="<?=$title?>"></div><br style="clear:both">
