@@ -1,57 +1,52 @@
 <?php
 define('PYGMY_PATH', '/var/www/psyncro.com/page/static/tech');
+define('PYGMY_EXTENSION', '.html');
 
 if( isset( $_POST['rm'] ) ) {
 	unlink( PYGMY_PATH . DIRECTORY_SEPARATOR . $_POST['file'] );
 	header("Location: $_SERVER[SCRIPT_NAME]");
 	die;
 }
-
 if( ! empty( $_POST ) ) {
+	$dir = trim(pathinfo($_POST['path'], PATHINFO_DIRNAME),'/');
+
+	if( strpos($_POST['path'], '/') !== false ) {
+		if( ! is_dir(PYGMY_PATH . DIRECTORY_SEPARATOR . $dir) ) {
+			mkdir(PYGMY_PATH . DIRECTORY_SEPARATOR . $dir, 0775, true);
+		}
+	}
+
+	$draft = '.draft.' . pathinfo($_POST['path'], PATHINFO_FILENAME);
+
 	if( isset( $_POST['draft'] ) ) {
-		$name = '.draft.' . $_POST['slug'] . '.html';
+		$name = $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION;
 	}
 	else {
-		$name = $_POST['slug'] . '.html';
-		if( file_exists( PYGMY_PATH . '/.draft.' . $name ) ) {
-			unlink( PYGMY_PATH . '/.draft.' . $name );
+		$name = $_POST['path'] . PYGMY_EXTENSION;
+		if( file_exists( PYGMY_PATH . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION ) ) {
+			unlink( PYGMY_PATH . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION );
 		}
 	}
 
 	$title = '<!-- ' . $_POST['title'] . ' -->';
 	file_put_contents(PYGMY_PATH . "/$name", "$title\n$_POST[article]");
 
-	header("Location: $_SERVER[SCRIPT_NAME]?file=/" . $name);
+	header("Location: $_SERVER[SCRIPT_NAME]?file=" . $name);
 	die;
 }
 
 if( ! empty( $_GET['file'] ) ) {
-	$path = PYGMY_PATH . DIRECTORY_SEPARATOR . $_GET['file'];
-	$title = fgets(fopen($path, 'r'));
-	$article = file_get_contents($path);
+	$file = PYGMY_PATH . DIRECTORY_SEPARATOR . $_GET['file'];
+	$title = fgets(fopen($file, 'r'));
+	$article = file_get_contents($file);
 	$article = str_replace("$title", '', $article);
 	$title = trim( str_replace( ['<!--', '-->'], '', $title ) );
-	$slug = str_replace( '.draft.', '', pathinfo($path, PATHINFO_FILENAME) );
+	$path = str_replace( ['.draft.', PYGMY_EXTENSION], '', $_GET['file'] );
 }
 else {
 	$title = '';
 	$article = '';
-	$slug = '';
-}
-
-function dir_to_array($dir, $slice = true) {
-	$result = array();
-
-	$cdir = array_slice(scandir($dir), 2);
-	foreach( $cdir as $key => $value )
-	{
-		if( is_dir( $dir . DIRECTORY_SEPARATOR . $value ) )
-			$result[$value] = dir_to_array( $dir . DIRECTORY_SEPARATOR . $value );
-		else
-			$result[] = $value;
-	}
-
-	return $result;
+	$path = '';
 }
 
 function list_dir($dir, $slice = true) {
@@ -128,7 +123,7 @@ $files = list_dir(PYGMY_PATH);
 			<input type="hidden" name="file" value="<?=$_GET['file']?>">
 			<div>
 				<div><input style="width: 100%" type="text" name="title" placeholder="Title" value="<?=$title?>"></div><br style="clear:both">
-				<div><input required pattern="[0-9a-zA-Z_\-.]+" style="width: 100%" type="text" name="slug" placeholder="slug" value="<?=$slug?>"></div>
+				<div><input required pattern="[0-9a-zA-Z_\-.\/]+" style="width: 100%" type="text" name="path" placeholder="path" value="<?=$path?>"></div>
 				<br style="clear:both">
 			</div>
 			<div><textarea name="article"><?=$article?></textarea></div>
