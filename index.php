@@ -7,8 +7,10 @@ if( isset( $_POST['rm'] ) ) {
 	header("Location: $_SERVER[SCRIPT_NAME]");
 	die;
 }
+
 if( ! empty( $_POST ) ) {
-	$dir = trim(pathinfo($_POST['path'], PATHINFO_DIRNAME),'/');
+	$pathinfo = pathinfo($_POST['path']);
+	$dir = trim($pathinfo['dirname'],'/');
 
 	if( strpos($_POST['path'], '/') !== false ) {
 		if( ! is_dir(PYGMY_PATH . DIRECTORY_SEPARATOR . $dir) ) {
@@ -16,16 +18,16 @@ if( ! empty( $_POST ) ) {
 		}
 	}
 
-	$draft = '.draft.' . pathinfo($_POST['path'], PATHINFO_FILENAME);
+	$draft = $dir . DIRECTORY_SEPARATOR . '.draft.' . $pathinfo['filename'];
 
-	if( isset( $_POST['draft'] ) ) {
-		$name = $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION;
-	}
-	else {
-		$name = $_POST['path'] . PYGMY_EXTENSION;
-		if( file_exists( PYGMY_PATH . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION ) ) {
-			unlink( PYGMY_PATH . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION );
-		}
+	$name = ( isset( $_POST['draft'] )
+		? $draft
+		: $_POST['path'] ) . PYGMY_EXTENSION;
+
+	$draft_path = PYGMY_PATH . DIRECTORY_SEPARATOR . $draft . PYGMY_EXTENSION;
+
+	if( file_exists( $draft_path ) ) {
+		unlink( $draft_path );
 	}
 
 	$title = '<!-- ' . $_POST['title'] . ' -->';
@@ -55,6 +57,7 @@ function list_dir($dir, $slice = true) {
 	$fileinfos = new RecursiveIteratorIterator(
 		new RecursiveDirectoryIterator($dir)
 	);
+
 	foreach($fileinfos as $pathname => $fileinfo) {
 		if (!$fileinfo->isFile()) continue;
 		$result[] = str_replace(PYGMY_PATH, '', $pathname);
