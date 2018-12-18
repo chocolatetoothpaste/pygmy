@@ -51,22 +51,25 @@ else {
 	$path = '';
 }
 
-function list_dir($dir, $slice = true) {
+function list_files($dir, $slice = true) {
 	$result = array();
 
 	$fileinfos = new RecursiveIteratorIterator(
 		new RecursiveDirectoryIterator($dir)
 	);
 
-	foreach($fileinfos as $pathname => $fileinfo) {
-		if (!$fileinfo->isFile()) continue;
+	foreach( $fileinfos as $pathname => $fileinfo ) {
+		if ( ! $fileinfo->isFile() )
+			continue;
+
 		$result[] = str_replace(PYGMY_PATH, '', $pathname);
 	}
 
 	return $result;
 }
 
-$files = list_dir(PYGMY_PATH);
+$files = list_files(PYGMY_PATH);
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -105,7 +108,7 @@ $files = list_dir(PYGMY_PATH);
 </head>
 
 <body>
-	<div style="float: left; width: 40%;">
+	<!-- <div style="float: left; width: 40%;">
 		<div class=""><a class="button" href="<?=$_SERVER['SCRIPT_NAME']?>">New</a></div>
 		<?php foreach( $files as $f ) {
 			if( is_file(PYGMY_PATH . "/$f") ) {
@@ -120,16 +123,46 @@ $files = list_dir(PYGMY_PATH);
 					. "<a href=\"index.php?file=$f\">$line</a></div>";
 			}
 		} ?>
-	</div>
-	<div style="float: left; width: 60%;">
+	</div> -->
+	<div>
 		<form method="post" action="">
+			<div>
+				<select style="width: 100%" name="file" id="file">
+					<option>- Select file to edit-</option>
+					<?php
+						$opts = [];
+						foreach( $files as $f ) {
+							if( is_file(PYGMY_PATH . "/$f") ) {
+								$line = fgets(fopen(PYGMY_PATH . "/$f", 'r'));
+								if( strpos($line, '<!--') === false )
+									$line = '';
+								else
+									$line = trim( str_replace( ['<!--', '-->'], '', $line ) );
+
+								$selected = ( $f === $_GET['file'] ? 'selected' : '' );
+
+								$opts[$line] = "<option value=\"$f\" $selected>"
+									. ( strpos($f, '.draft') !== false ? 'Draft - ' : '' )
+									. "$line - $f</option>";
+							}
+						}
+						ksort($opts);
+						echo implode('', $opts);
+					?>
+				</select>
+			</div>
+			<br style="clear:both">
 			<input type="hidden" name="file" value="<?=$_GET['file']?>">
 			<div>
-				<div><input style="width: 100%" type="text" name="title" placeholder="Title" value="<?=$title?>"></div><br style="clear:both">
+				<div><input style="width: 100%" type="text" name="title" placeholder="Title" value="<?=$title?>"></div>
+				<br style="clear:both">
 				<div><input required pattern="[0-9a-zA-Z_\-.\/]+" style="width: 100%" type="text" name="path" placeholder="path" value="<?=$path?>"></div>
 				<br style="clear:both">
 			</div>
-			<div><textarea name="article"><?=$article?></textarea></div>
+			<div>
+				<textarea name="article"><?=$article?></textarea>
+				<br style="clear:both">
+			</div>
 			<div>
 				<button name="draft">Save Draft</button>
 				<button name="publish">Publish</button>
@@ -141,6 +174,7 @@ $files = list_dir(PYGMY_PATH);
 
 	<script>
 		var rmfile = document.getElementById('rm');
+		var selfile = document.getElementById('file');
 
 		rmfile.addEventListener('click', function(e) {
 			var conf = confirm("Are you sure you want to delete this file?");
@@ -149,6 +183,11 @@ $files = list_dir(PYGMY_PATH);
 				e.preventDefault();
 			}
 		})
+
+		selfile.addEventListener('change', function(e) {
+			window.location.href = window.location.pathname + '?file=' + this.value;
+		});
+
 		tinymce.init({
 			selector: 'textarea',
 			autoresize_min_height: 400,
